@@ -1,1 +1,17 @@
-{"dependencies":{"express":"^4.19.2","socket.io":"^4.7.5","socket.io-client":"^4.7.5"},"description":"Game Sprint 60 Detik — lomba mufrodat bahasa Arab multipemain (prototipe)","main":"server.js","name":"sprint-mufrodat","private":true,"scripts":{"start":"node server.js","test":"node test/simulate.js"},"version":"0.1.0"}
+{
+  "name": "sprint-mufrodat",
+  "version": "0.1.0",
+  "description": "Game Sprint 60 Detik — lomba mufrodat bahasa Arab multipemain (prototipe)",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/simulate.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
+  }
+}

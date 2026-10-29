@@ -3,60 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Sprint Mufrodat ⚡</title>
+<title>Mufrodatuna — Pembelajaran & Kompetisi Kosakata Arab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<!-- Tombol Global Suara -->
+<button id="btn-sound-toggle" class="sound-toggle" onclick="toggleSound()" title="Atur Suara & Efek">
+  <span id="sound-icon" class="icon-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+  </span>
+  <span id="sound-label">Suara Aktif</span>
+</button>
+
 <div id="app">
 
   <!-- ============ BERANDA ============ -->
   <section id="view-home" class="view active">
-    <div class="hero">
-      <div class="logo">⚡</div>
-      <h1>Sprint Mufrodat</h1>
-      <p class="subtitle">Lomba kosakata Arab 60 detik.<br>Siapa tercepat & tertepat?</p>
-      <div class="howto">
-        <span>1️⃣ Ustadz buat room</span><span>2️⃣ Santri gabung pakai NIS</span><span>3️⃣ Jawab secepatnya!</span>
+    <div class="hero card">
+      <div class="mascot-hero" onclick="testMascotHello()" title="Dengarkan sapaan Arab">
+        <div class="crest-mark" dir="rtl">مُفْرَدَاتُنَا</div>
+        <span class="mascot-badge" dir="rtl">أَهْلًا وَسَهْلًا</span>
       </div>
-      <button class="btn btn-primary" onclick="showHostSetup()">🎓 Buat Room (Ustadz)</button>
-      <button class="btn btn-secondary" onclick="showJoin()">📱 Gabung (Santri)</button>
-      <button class="btn btn-ghost" onclick="location.href='admin.html'" style="font-size:14px">🗂️ Kelola Mufrodat (Admin)</button>
+      <h1>Mufrodatuna</h1>
+      <p class="subtitle">Latihan terstruktur & kompetisi kosakata bahasa Arab.<br>Dilengkapi pelafalan interaktif dan evaluasi bertahap.</p>
+      <div class="howto">
+        <span>Istima' Audio</span>
+        <span>Susun Huruf</span>
+        <span>Pasangkan Kata</span>
+        <span>Shohih / Khotho'</span>
+      </div>
+      <button class="btn btn-primary" onclick="showSoloSetup()">Mulai Latihan Mandiri</button>
+      <button class="btn btn-secondary" onclick="showHostSetup()">Buat Room Kompetisi (Ustadz)</button>
+      <button class="btn btn-secondary" onclick="showJoin()">Gabung Room (Santri)</button>
+      <button class="btn btn-ghost" onclick="location.href='admin.html'">Panel Admin Mufrodat</button>
+    </div>
+  </section>
+
+  <!-- ============ LATIHAN MANDIRI (SOLO) ============ -->
+  <section id="view-solo-setup" class="view">
+    <div class="card">
+      <div class="section-header">
+        <span class="eyebrow">MODE MANDIRI</span>
+        <h2>Latihan Terpadu</h2>
+        <p class="muted">Pilih kurikulum dan metode latihan yang ingin dikuasai.</p>
+      </div>
+      <label>Program Kurikulum</label>
+      <select id="solo-program" class="input" onchange="loadSoloBabs()"></select>
+      <label>Bab Materi</label>
+      <div id="solo-babs"></div>
+      <label>Metode Permainan</label>
+      <select id="solo-type" class="input">
+        <option value="mix">Terpadu (Rotasi Semua Metode)</option>
+        <option value="listen">Istima' (Identifikasi Pelafalan Arab)</option>
+        <option value="jumble">Tarkib Huruf (Susun Huruf Arab)</option>
+        <option value="pairs">Muthabaqah (Pasangkan Kosakata)</option>
+        <option value="truefalse">Shohih / Khotho' (Validasi Cepat)</option>
+        <option value="mc">Ikhtiyar (Pilihan Ganda + Audio)</option>
+        <option value="essay">Kitabah (Ketik Jawaban)</option>
+      </select>
+      <div class="row" style="margin-top:18px">
+        <button class="btn btn-ghost" onclick="goHome()">Kembali</button>
+        <button class="btn btn-primary" onclick="startSoloGame()">Mulai Sesi</button>
+      </div>
     </div>
   </section>
 
   <!-- ============ HOST: WIZARD ============ -->
   <section id="view-host-setup" class="view">
     <div class="card">
-      <h2>🎓 Buat Room</h2>
+      <div class="section-header">
+        <span class="eyebrow">MODE KELAS</span>
+        <h2>Konfigurasi Room</h2>
+      </div>
       <div class="steps">
-        <div class="pill on" id="pill-1">1️⃣ Program</div>
-        <div class="pill" id="pill-2">2️⃣ Bab</div>
-        <div class="pill" id="pill-3">3️⃣ Sesi</div>
+        <div class="pill on" id="pill-1">01 Program</div>
+        <div class="pill" id="pill-2">02 Bab</div>
+        <div class="pill" id="pill-3">03 Sesi</div>
       </div>
       <div id="wz-1">
-        <h3>Langkah 1 — Pilih Program</h3>
+        <h3>Pilih Program</h3>
         <div id="wz-programs"></div>
-        <button class="btn btn-ghost" onclick="goHome()">← Kembali</button>
+        <button class="btn btn-ghost" onclick="goHome()">Kembali</button>
       </div>
       <div id="wz-2" style="display:none">
-        <h3>Langkah 2 — Pilih Bab</h3>
+        <h3>Pilih Bab Materi</h3>
         <p class="muted" id="wz-prog-name"></p>
         <div id="wz-babs"></div>
         <div class="row">
-          <button class="btn btn-ghost" onclick="wzStep(1)">←</button>
-          <button class="btn btn-primary" onclick="wzStep(3)">Lanjut →</button>
+          <button class="btn btn-ghost" onclick="wzStep(1)">Kembali</button>
+          <button class="btn btn-primary" onclick="wzStep(3)">Lanjutkan</button>
         </div>
       </div>
       <div id="wz-3" style="display:none">
-        <h3>Langkah 3 — Atur Sesi</h3>
+        <h3>Atur Sesi Kompetisi</h3>
         <div id="wz-sessions"></div>
-        <button class="btn btn-secondary" id="btn-add-session" onclick="addSessionCfg()">+ Tambah Sesi 2</button>
+        <button class="btn btn-secondary" id="btn-add-session" onclick="addSessionCfg()">+ Tambah Sesi Kedua</button>
         <div class="row">
-          <button class="btn btn-ghost" onclick="wzStep(2)">←</button>
-          <button class="btn btn-primary" onclick="finishWizard()">Buat Room ⚡</button>
+          <button class="btn btn-ghost" onclick="wzStep(2)">Kembali</button>
+          <button class="btn btn-primary" onclick="finishWizard()">Buka Room</button>
         </div>
       </div>
     </div>
@@ -65,17 +113,20 @@
   <!-- ============ HOST: LOBI ============ -->
   <section id="view-host-lobby" class="view">
     <div class="card wide">
-      <h2>Ruang Tunggu</h2>
+      <div class="section-header center">
+        <span class="eyebrow">RUANG TUNGGU</span>
+        <h2>Kode Akses Kelas</h2>
+      </div>
       <div class="room-code-box">
         <span class="label">KODE ROOM</span>
         <span id="host-code" class="room-code">----</span>
       </div>
-      <p class="muted">Santri masukkan kode ini + NIS di HP masing-masing</p>
-      <h3>Peserta (<span id="lobby-count">0</span>)</h3>
+      <p class="muted" style="text-align:center">Santri memasukkan kode di atas beserta NIS pada perangkat masing-masing.</p>
+      <h3>Peserta Terdaftar (<span id="lobby-count">0</span>)</h3>
       <ul id="lobby-list" class="player-list"></ul>
       <div class="row">
-        <button class="btn btn-secondary" onclick="addBots()">🤖 Tambah 2 Bot</button>
-        <button id="btn-start" class="btn btn-primary" onclick="startGame()" disabled>Mulai Sprint ⚡</button>
+        <button class="btn btn-secondary" onclick="addBots()">+ Simulasi Lawan</button>
+        <button id="btn-start" class="btn btn-primary" onclick="startGame()" disabled>Mulai Sesi</button>
       </div>
     </div>
   </section>
@@ -84,7 +135,10 @@
   <section id="view-host-live" class="view">
     <div class="card wide">
       <div class="live-header">
-        <h2>🔴 Live</h2>
+        <div>
+          <span class="eyebrow">SESI BERLANGSUNG</span>
+          <h2>Papan Peringkat Langsung</h2>
+        </div>
         <div id="host-timer" class="timer">60</div>
       </div>
       <div id="host-board" class="board"></div>
@@ -94,11 +148,11 @@
   <!-- ============ JEDA ANTAR SESI ============ -->
   <section id="view-intermission" class="view">
     <div class="card wide center">
-      <div class="logo">☕</div>
-      <h2>Jeda — Sesi <span id="int-next-n"></span> berikutnya</h2>
+      <span class="eyebrow">TRANSISI BABAK</span>
+      <h2>Persiapan Sesi <span id="int-next-n"></span></h2>
       <p class="muted" id="int-desc"></p>
-      <div id="int-timer" class="timer" style="margin:12px auto">15</div>
-      <h3>Sementara (total)</h3>
+      <div id="int-timer" class="timer" style="margin:16px auto">15</div>
+      <h3>Klasemen Sementara</h3>
       <div id="int-board" class="board"></div>
     </div>
   </section>
@@ -106,12 +160,15 @@
   <!-- ============ HOST: PODIUM ============ -->
   <section id="view-host-podium" class="view">
     <div class="card wide">
-      <h2>🏆 Juara Umum</h2>
+      <div class="section-header center">
+        <span class="eyebrow">HASIL AKHIR</span>
+        <h2>Peringkat Terbaik</h2>
+      </div>
       <div id="podium" class="podium"></div>
       <div id="host-results" class="board"></div>
       <div class="row">
-        <button class="btn btn-secondary" onclick="location.reload()">Room Baru</button>
-        <button class="btn btn-ghost" onclick="location.href='admin.html'">🗂️ Kelola Mufrodat</button>
+        <button class="btn btn-primary" onclick="location.reload()">Buat Room Baru</button>
+        <button class="btn btn-ghost" onclick="location.href='admin.html'">Kelola Mufrodat</button>
       </div>
     </div>
   </section>
@@ -119,54 +176,127 @@
   <!-- ============ SANTRI: GABUNG ============ -->
   <section id="view-join" class="view">
     <div class="card">
-      <h2>📱 Gabung Lomba</h2>
+      <div class="section-header">
+        <span class="eyebrow">PESERTA</span>
+        <h2>Gabung Sesi</h2>
+      </div>
       <label>Kode Room</label>
-      <input id="join-code" class="input" placeholder="cth: AB12" maxlength="4" autocapitalize="characters">
-      <label>NIS</label>
-      <input id="join-nis" class="input" placeholder="Nomor Induk Santri" inputmode="numeric">
+      <input id="join-code" class="input" placeholder="Contoh: AB12" maxlength="4" autocapitalize="characters">
+      <label>Nomor Induk Santri (NIS)</label>
+      <input id="join-nis" class="input" placeholder="Masukkan NIS" inputmode="numeric">
       <div id="join-error" class="error"></div>
-      <button class="btn btn-primary" onclick="joinRoom()">Gabung ⚡</button>
-      <button class="btn btn-ghost" onclick="goHome()">← Kembali</button>
+      <button class="btn btn-primary" onclick="joinRoom()">Masuk ke Ruang Tunggu</button>
+      <button class="btn btn-ghost" onclick="goHome()">Kembali</button>
     </div>
   </section>
 
   <!-- ============ SANTRI: TUNGGU ============ -->
   <section id="view-waiting" class="view">
     <div class="card center">
-      <div class="logo">⏳</div>
-      <h2 id="waiting-nama">Halo!</h2>
-      <p class="muted">Tunggu ustadz memulai sprint...</p>
+      <div class="crest-mark small" dir="rtl">مُفْرَدَاتُنَا</div>
+      <h2 id="waiting-nama">Selamat Datang</h2>
+      <p class="muted">Menunggu instruksi ustadz untuk memulai sesi...</p>
       <div class="spinner"></div>
     </div>
   </section>
 
   <!-- ============ SANTRI: ARENA ============ -->
   <section id="view-arena" class="view">
-    <div class="card wide">
+    <div class="card wide arena-card">
       <div class="arena-meta">
-        <div class="sess-badge" id="sess-badge">⚡ Sesi 1</div>
-        <div class="rank-chip" id="rank-chip">🏅 #–</div>
+        <div class="sess-badge" id="sess-badge">Sesi 1</div>
+        <div class="hearts-chip hidden" id="arena-hearts" title="Kesempatan Tersisa"></div>
+        <div class="rank-chip" id="rank-chip">Peringkat –</div>
       </div>
+
       <div class="arena-top">
-        <div class="score-chip">⭐ <span id="arena-score">0</span></div>
+        <div class="score-chip" id="score-chip-box">
+          <span class="chip-label">POIN</span>
+          <span id="arena-score" class="chip-val">0</span>
+          <span id="float-pop" class="float-pop"></span>
+        </div>
         <div id="arena-timer" class="timer small">60</div>
-        <div id="arena-streak" class="streak-chip">🔥 <span id="streak-n">0</span></div>
+        <div id="arena-streak" class="streak-chip">
+          <span class="chip-label">BERUNTUN</span>
+          <span id="streak-n" class="chip-val">0</span>
+        </div>
       </div>
+
       <div class="timer-bar"><div id="timer-fill"></div></div>
-      <div class="question-box">
-        <div id="q-label" class="q-label">Terjemahkan ke Arab:</div>
+
+      <!-- Baris Instruktur / Panduan (Al-Mu'allim) -->
+      <div class="mascot-bar" id="mascot-bar">
+        <div class="mascot-avatar" id="mascot-avatar" onclick="replayCurrentAudio()" title="Putar ulang pelafalan">م</div>
+        <div class="mascot-bubble" id="mascot-speech">Simak soal dengan saksama dan pilih jawaban yang tepat.</div>
+      </div>
+
+      <!-- Kotak Soal Utama -->
+      <div class="question-box" id="question-box">
+        <div class="q-mode-pill" id="q-mode-pill">IKHTIYAR</div>
+        <div id="q-label" class="q-label">Terjemahkan ke bahasa Indonesia:</div>
         <div id="q-prompt" class="q-prompt" dir="auto">...</div>
+
+        <!-- Baris Kontrol Audio Arab -->
+        <div id="q-audio-row" class="q-audio-row">
+          <button type="button" class="btn-audio-main" id="btn-speak-normal" onclick="replayCurrentAudio(false)">
+            <svg class="speaker-wave" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            <span id="btn-speak-text">Simak Pelafalan</span>
+          </button>
+          <button type="button" class="btn-audio-slow" id="btn-speak-slow" onclick="replayCurrentAudio(true)" title="Putar dengan tempo lambat">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Lambat</span>
+          </button>
+        </div>
+
+        <!-- Pasangan kata untuk mode True/False -->
+        <div id="q-tf-pair" class="q-tf-pair hidden"></div>
       </div>
-      <div class="answer-row" id="essay-row">
-        <input id="answer-input" class="input answer-input" placeholder="Ketik jawaban di sini..."
+
+      <!-- 1. Mode Essay (Ketik) -->
+      <div class="answer-row" id="essay-row" style="display:none">
+        <input id="answer-input" class="input answer-input" placeholder="Ketik jawaban..."
                autocomplete="off" autocapitalize="off" spellcheck="false">
-        <button class="btn btn-primary" onclick="submitAnswer()">➤</button>
+        <button class="btn btn-primary" onclick="submitAnswer()">Kirim</button>
       </div>
+
+      <!-- 2. Mode Pilihan Ganda & Istima' (MC / Listen) -->
       <div id="mc-options" class="mc-options" style="display:none"></div>
+
+      <!-- 3. Mode Benar / Salah Cepat (True / False) -->
+      <div id="tf-options" class="tf-options" style="display:none">
+        <button type="button" class="tf-btn tf-true" onclick="answerTF('BENAR')">
+          <span class="tf-ar" dir="rtl">صَحِيح</span>
+          <span class="tf-id">BENAR</span>
+        </button>
+        <button type="button" class="tf-btn tf-false" onclick="answerTF('SALAH')">
+          <span class="tf-ar" dir="rtl">خَطَأ</span>
+          <span class="tf-id">SALAH</span>
+        </button>
+      </div>
+
+      <!-- 4. Mode Susun Huruf Arab (Word/Letter Bank Jumble) -->
+      <div id="jumble-box" class="jumble-box" style="display:none">
+        <div class="jumble-tray-wrap">
+          <div id="jumble-slots" class="jumble-slots" dir="rtl"></div>
+          <button type="button" class="btn-backspace" onclick="popJumbleTile()" title="Hapus huruf terakhir">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+          </button>
+        </div>
+        <div id="jumble-bank" class="jumble-bank" dir="rtl"></div>
+      </div>
+
+      <!-- 5. Mode Pasangkan Kartu (Match Pairs) -->
+      <div id="pairs-box" class="pairs-box" style="display:none">
+        <div class="pairs-col" id="pairs-ar-col"></div>
+        <div class="pairs-col" id="pairs-id-col"></div>
+      </div>
+
+      <!-- Banner Feedback -->
       <div id="feedback" class="feedback"></div>
-      <p class="hint">💡 Jawaban Arab boleh <b>tanpa harakat</b> — mis. ketik <span dir="rtl">كتاب</span> untuk <span dir="rtl">كِتَابٌ</span>. Aktifkan keyboard Arab di HP-mu ⌨️</p>
+
+      <p class="hint" id="arena-hint">Tekan tombol <b>Simak Pelafalan</b> atau <b>Lambat</b> untuk mendengarkan ulang kosakata Arab.</p>
       <details class="mini-board-wrap">
-        <summary>Lawan ⚔️ (<span id="mini-count">0</span>)</summary>
+        <summary>Klasemen Peserta (<span id="mini-count">0</span>)</summary>
         <div id="mini-board" class="board mini"></div>
       </details>
     </div>
@@ -175,12 +305,14 @@
   <!-- ============ SANTRI: HASIL ============ -->
   <section id="view-result" class="view">
     <div class="card center">
-      <div class="logo">🏁</div>
-      <h2>Waktu Habis!</h2>
+      <span class="eyebrow">SESI SELESAI</span>
+      <h2 id="result-title">Ringkasan Hasil</h2>
       <div id="my-rank" class="my-rank"></div>
       <div id="my-stats" class="stats"></div>
       <div id="result-board" class="board"></div>
-      <button class="btn btn-ghost" onclick="location.reload()">← Keluar</button>
+      <div class="row">
+        <button class="btn btn-primary" onclick="location.reload()">Kembali ke Beranda</button>
+      </div>
     </div>
   </section>
 

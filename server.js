@@ -8,12 +8,30 @@
  */
 const express = require("express");
 const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const { isCorrect } = require("./lib/normalize");
 const db = require("./lib/db");
 
 const app = express();
 app.use(express.static("public"));
+
+/* Endpoint bantu pelafalan Arab (fallback jika browser tidak punya voice ar-SA lokal) */
+app.get("/api/tts", (req, res) => {
+  const q = String(req.query.q || "").trim().slice(0, 120);
+  if (!q) return res.status(400).end();
+  const slow = req.query.slow === "1" ? "0.3" : "1";
+  const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=ar&ttsspeed=${slow}&q=${encodeURIComponent(q)}`;
+  const reqTts = https.get(url, { headers: { "User-Agent": "Mozilla/5.0" }, timeout: 4000 }, (up) => {
+    if (up.statusCode !== 200) return res.status(502).end();
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    up.pipe(res);
+  });
+  reqTts.on("error", () => { if (!res.headersSent) res.status(502).end(); });
+  reqTts.on("timeout", () => { reqTts.destroy(); if (!res.headersSent) res.status(504).end(); });
+});
+
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -41,30 +59,77 @@ const makeCode = () => {
 };
 
 /* ---------------- soal ---------------- */
+const VALID_TYPES = ["mix", "mc", "listen", "jumble", "truefalse", "pairs", "essay"];
+const MIX_SEQUENCE = ["mc", "listen", "truefalse", "jumble", "mc", "pairs"];
+const ARABIC_DISTRACTORS = ["بَ", "تُ", "مِ", "نَ", "لِ", "كَ", "سُ", "فَ", "رِ", "عَ"];
+
+function splitArabicTiles(arab) {
+  const clean = String(arab || "").trim();
+  return clean.match(/[^\u064B-\u065F\u0670\u06D6-\u06ED\s][\u064B-\u065F\u0670\u06D6-\u06ED]*/g) || [clean];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function pickWord(pool, recentIds) {
   const avail = pool.filter((w) => !recentIds.includes(w.id));
   const list = avail.length ? avail : pool;
   return list[Math.floor(Math.random() * list.length)];
 }
 
-function makeQuestion(pool, recentIds, dir, type) {
+function makeQuestion(pool, recentIds, dir, type, qIndex = 0) {
+  const actualType = type === "mix" ? MIX_SEQUENCE[qIndex % MIX_SEQUENCE.length] : type;
   const w = pickWord(pool, recentIds);
+  const others = shuffle(pool.filter((x) => x.id !== w.id));
+
   const q = {
-    wordId: w.id, dir, type,
+    wordId: w.id,
+    dir,
+    type: actualType,
+    arabicText: w.arab,
+    indonesiaText: w.indonesia,
     prompt: dir === "id2ar" ? w.indonesia : w.arab,
     answer: dir === "id2ar" ? w.arab : w.indonesia,
     answerLang: dir === "id2ar" ? "ar" : "id",
   };
-  if (type === "mc") {
-    const others = pool.filter((x) => x.id !== w.id);
-    // acak + ambil 3 pengecoh
-    const distract = [...others].sort(() => Math.random() - 0.5).slice(0, 3)
-      .map((x) => (dir === "id2ar" ? x.arab : x.indonesia));
+
+  if (actualType === "mc" || actualType === "listen") {
+    const distract = others.slice(0, 3).map((x) => (dir === "id2ar" ? x.arab : x.indonesia));
     const opts = [...distract];
-    // sispkan jawaban di posisi acak
     opts.splice(Math.floor(Math.random() * (opts.length + 1)), 0, q.answer);
     q.options = opts;
+  } else if (actualType === "jumble") {
+    // Susun Huruf Arab (Word Bank ala Duolingo)
+    q.prompt = w.indonesia;
+    q.answer = w.arab;
+    q.answerLang = "ar";
+    const coreTiles = splitArabicTiles(w.arab);
+    const extra = shuffle(ARABIC_DISTRACTORS.filter((d) => !coreTiles.includes(d))).slice(0, 2);
+    q.targetLen = coreTiles.length;
+    q.tiles = shuffle([...coreTiles, ...extra]);
+  } else if (actualType === "truefalse") {
+    // Benar / Salah Cepat (Shohih / Khotho')
+    const isMatch = Math.random() < 0.5 || others.length === 0;
+    const partner = isMatch ? w : others[0];
+    q.prompt = w.arab;
+    q.pairedMeaning = partner.indonesia;
+    q.answer = isMatch ? "BENAR" : "SALAH";
+    q.answerLang = "id";
+    q.explain = `${w.arab} = ${w.indonesia}`;
+  } else if (actualType === "pairs") {
+    // Pasangkan 4 Kata (Match Madness)
+    const pairWords = [w, ...others.slice(0, 3)];
+    q.pairs = pairWords.map((x) => ({ id: x.id, arab: x.arab, indonesia: x.indonesia }));
+    q.answer = "PAIRS_DONE";
+    q.answerLang = "id";
   }
+
   return q;
 }
 
@@ -72,7 +137,8 @@ function serveQuestion(room, socketId) {
   const p = room.players.get(socketId);
   if (!p || p.isBot) return null;
   const sess = room.config.sessions[room.sessionIndex];
-  const q = makeQuestion(room.pool, p.recentIds, sess.dir, sess.type);
+  const q = makeQuestion(room.pool, p.recentIds, sess.dir, sess.type, p.qCount || 0);
+  p.qCount = (p.qCount || 0) + 1;
   p.recentIds.push(q.wordId);
   if (p.recentIds.length > 10) p.recentIds.shift();
   p.question = { ...q, servedAt: Date.now() };
@@ -81,13 +147,13 @@ function serveQuestion(room, socketId) {
 }
 
 /* ---------------- skor ---------------- */
-function scoreAnswer(p, correct, elapsedMs) {
+function scoreAnswer(p, correct, elapsedMs, qType) {
   if (!correct) { p.streak = 0; p.wrong++; return 0; }
   const speedBonus = Math.max(0, Math.round(50 - (elapsedMs / 1000) * 10));
   p.streak++;
   p.bestStreak = Math.max(p.bestStreak, p.streak);
   p.correct++;
-  let pts = 100 + speedBonus;
+  let pts = (qType === "pairs" ? 180 : 100) + speedBonus;
   if (p.streak % 5 === 0) pts += 100;
   p.sessionScore += pts;
   p.total += pts;
@@ -142,7 +208,7 @@ function beginPlay(room, sess) {
 
   for (const [sid, p] of room.players) {
     if (p.isBot) continue;
-    p.sessionScore = 0; p.question = null; p.recentIds = [];
+    p.sessionScore = 0; p.question = null; p.recentIds = []; p.qCount = 0;
     io.to(sid).emit("game:question", serveQuestion(room, sid));
   }
   // bot
@@ -232,7 +298,7 @@ io.on("connection", (socket) => {
       return cb({ error: "Sesi harus 1 atau 2." });
     for (const s of sessions) {
       if (!["ar2id", "id2ar"].includes(s.dir)) return cb({ error: "Arah sesi tidak valid." });
-      if (!["essay", "mc"].includes(s.type)) return cb({ error: "Tipe sesi tidak valid." });
+      if (!VALID_TYPES.includes(s.type)) return cb({ error: "Tipe sesi tidak valid." });
       s.seconds = Math.min(180, Math.max(15, parseInt(s.seconds) || DEFAULT_SECONDS));
     }
     const pool = db.getPool(babIds);
@@ -246,7 +312,7 @@ io.on("connection", (socket) => {
   socket.on("host:addBots", () => {
     const room = [...rooms.values()].find((r) => r.hostId === socket.id);
     if (!room || room.state !== "lobby") return;
-    ["Bot Utsman 🤖", "Bot Maryam 🤖"].forEach((nama, i) => {
+    ["Bot Utsman", "Bot Maryam"].forEach((nama, i) => {
       const id = `bot-${room.code}-${i}`;
       if (!room.players.has(id)) addPlayer(room, id, `BOT${i + 1}`, nama, true);
     });
@@ -275,6 +341,28 @@ io.on("connection", (socket) => {
     io.to(code).emit("lobby:update", publicLobby(room));
   });
 
+  socket.on("solo:start", ({ programId, babIds, nis, type = "mix", seconds = 90 }, cb) => {
+    babIds = (babIds || []).map(Number).filter(Boolean);
+    if (!babIds.length) return cb && cb({ error: "Pilih minimal 1 bab." });
+    const pool = db.getPool(babIds);
+    if (pool.length < 4) return cb && cb({ error: `Kata terlalu sedikit (${pool.length}).` });
+    const code = makeCode();
+    const sessions = [{ dir: "ar2id", type: VALID_TYPES.includes(type) ? type : "mix", seconds: Number(seconds) || 90 }];
+    const room = {
+      code, hostId: socket.id, isSolo: true, state: "lobby", players: new Map(),
+      config: { programId, babIds, sessions }, pool, sessionIndex: 0, endsAt: 0, tickTimer: null, bots: [],
+    };
+    rooms.set(code, room);
+    socket.join(code);
+    socket.data.roomCode = code;
+    const cleanNis = String(nis || "1001").trim();
+    const nama = lookupSantri(cleanNis);
+    addPlayer(room, socket.id, cleanNis, nama, false);
+    addPlayer(room, `bot-${code}-0`, "BOT1", "Al-Hudhud", true);
+    cb && cb({ ok: true, code, nis: cleanNis, nama });
+    startSession(room, 0);
+  });
+
   socket.on("player:answer", ({ text }, cb) => {
     const room = socket.data.roomCode && rooms.get(socket.data.roomCode);
     if (!room || room.state !== "playing") return cb && cb({ error: "Game tidak berjalan." });
@@ -282,12 +370,24 @@ io.on("connection", (socket) => {
     if (!p || !p.question) return cb && cb({ error: "Tidak ada soal aktif." });
     const q = p.question;
     const elapsed = Date.now() - q.servedAt;
-    const correct = isCorrect(text, q.answer, q.answerLang);
-    const pts = scoreAnswer(p, correct, elapsed);
+    let correct = isCorrect(text, q.answer, q.answerLang);
+    if (!correct && q.type === "jumble") {
+      correct = isCorrect(String(text || "").replace(/\s+/g, ""), String(q.answer || "").replace(/\s+/g, ""), q.answerLang);
+    }
+    const pts = scoreAnswer(p, correct, elapsed, q.type);
     const next = serveQuestion(room, socket.id);
     io.to(room.code).emit("game:leaderboard",
       { session: sessionBoard(room), total: totalBoard(room), sessionIndex: room.sessionIndex });
-    cb && cb({ correct, points: pts, correctAnswer: q.answer, streak: p.streak, next });
+    cb && cb({
+      correct,
+      points: pts,
+      correctAnswer: q.answer,
+      arabicWord: q.arabicText,
+      indonesiaWord: q.indonesiaText,
+      explain: q.explain || `${q.arabicText} = ${q.indonesiaText}`,
+      streak: p.streak,
+      next,
+    });
   });
 
   /* ---------- admin (kelola mufrodat) ---------- */

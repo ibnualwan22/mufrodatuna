@@ -3,30 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kelola Mufrodat 🗂️</title>
+<title>Kelola Mufrodat — Panel Kurikulum</title>
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="app" style="max-width:900px">
+<div id="app" style="max-width:920px">
 
   <section id="adm-login" class="view active">
     <div class="card" style="max-width:420px;margin:40px auto">
-      <h2>🔐 Admin Mufrodat</h2>
-      <label>Password admin</label>
-      <input id="adm-pass" type="password" class="input" placeholder="••••••">
+      <div class="section-header">
+        <span class="eyebrow">OTENTIKASI</span>
+        <h2>Panel Admin Mufrodat</h2>
+      </div>
+      <label>Kata Sandi Admin</label>
+      <input id="adm-pass" type="password" class="input" placeholder="Masukkan kata sandi">
       <div id="adm-err" class="error"></div>
       <button class="btn btn-primary" onclick="admLogin()">Masuk</button>
-      <button class="btn btn-ghost" onclick="location.href='/'">← Kembali ke game</button>
+      <button class="btn btn-ghost" onclick="location.href='/'">Kembali ke Beranda</button>
     </div>
   </section>
 
   <section id="adm-main" class="view">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2>🗂️ Kelola Mufrodat</h2>
-        <button class="icon-btn" onclick="location.href='/'">🎮 Game</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <span class="eyebrow">KURIKULUM</span>
+          <h2>Kelola Mufrodat</h2>
+        </div>
+        <button class="icon-btn" onclick="location.href='/'">Kembali ke Game</button>
       </div>
       <div class="admin-grid">
         <div>
@@ -44,14 +50,14 @@
           </div>
         </div>
         <div>
-          <h3 class="section-title">Kata <span id="word-for" class="muted"></span> (<span id="word-count">0</span>)</h3>
+          <h3 class="section-title">Daftar Kata <span id="word-for" class="muted"></span> (<span id="word-count">0</span>)</h3>
           <div id="adm-words" style="max-height:420px;overflow-y:auto"></div>
           <div class="form-row">
             <input id="new-ar" class="input" dir="rtl" lang="ar" placeholder="كِتَابٌ">
             <input id="new-id" class="input" placeholder="arti...">
-            <button class="btn btn-secondary" onclick="addWord()">+ Tambah</button>
+            <button class="btn btn-primary" onclick="addWord()">+ Tambah</button>
           </div>
-          <p class="hint">💡 Tulis Arab <b>dengan harakat</b> — pemain boleh menjawab tanpa harakat.</p>
+          <p class="hint">Tulis kata Arab lengkap dengan harakat — peserta tetap dapat menjawab tanpa harakat.</p>
         </div>
       </div>
     </div>
@@ -90,7 +96,7 @@ async function loadPrograms() {
   const el = document.getElementById('adm-programs');
   el.innerHTML = r.programs.map(p => `
     <div class="bab-item ${p.id === curProgram ? 'sel' : ''}" onclick="selProgram(${p.id}, '${esc(p.nama)}')">
-      <span>📚 ${esc(p.nama)}</span><span class="muted">${p.jml_bab} bab • ${p.jml_kata} kata</span>
+      <span>${esc(p.nama)}</span><span class="muted">${p.jml_bab} bab · ${p.jml_kata} kata</span>
     </div>`).join('') || '<p class="muted">Belum ada program.</p>';
   if (!curProgram && r.programs.length) selProgram(r.programs[0].id, r.programs[0].nama);
 }
@@ -101,7 +107,7 @@ async function selProgram(id, nama) {
   const el = document.getElementById('adm-babs');
   el.innerHTML = r.babs.map(b => `
     <div class="bab-item ${b.id === curBab ? 'sel' : ''}" onclick="selBab(${b.id}, '${esc(b.judul)}')">
-      <span>📖 ${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
+      <span>${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
     </div>`).join('') || '<p class="muted">Belum ada bab.</p>';
   loadPrograms();
 }
@@ -114,8 +120,8 @@ async function selBab(id, judul) {
     <div class="word-row">
       <span class="ar" dir="rtl">${esc(w.arab)}</span>
       <span class="id">${esc(w.indonesia)}</span>
-      <button class="icon-btn" onclick="editWord(${w.id}, '${esc(w.arab)}', '${esc(w.indonesia)}')">✏️</button>
-      <button class="icon-btn danger" onclick="delWord(${w.id})">🗑️</button>
+      <button class="icon-btn" onclick="editWord(${w.id}, '${esc(w.arab)}', '${esc(w.indonesia)}')">Ubah</button>
+      <button class="icon-btn danger" onclick="delWord(${w.id})">Hapus</button>
     </div>`).join('') || '<p class="muted">Belum ada kata di bab ini.</p>';
   selProgramRefresh();
 }
@@ -123,7 +129,7 @@ async function selProgramRefresh() {
   const r = await call('admin:getBabs', { programId: curProgram });
   document.getElementById('adm-babs').innerHTML = r.babs.map(b => `
     <div class="bab-item ${b.id === curBab ? 'sel' : ''}" onclick="selBab(${b.id}, '${esc(b.judul)}')">
-      <span>📖 ${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
+      <span>${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
     </div>`).join('');
 }
 
@@ -150,7 +156,7 @@ async function addWord() {
     document.getElementById('new-ar').value = '';
     document.getElementById('new-id').value = '';
     const b = document.querySelector(`#adm-babs .bab-item.sel span`);
-    selBab(curBab, b ? b.textContent.replace('📖 ', '') : '');
+    selBab(curBab, b ? b.textContent : '');
   }
 }
 async function editWord(id, arab, indonesia) {
@@ -159,12 +165,12 @@ async function editWord(id, arab, indonesia) {
   const ni = prompt('Arti Indonesia:', indonesia);
   if (ni === null) return;
   const r = await call('admin:updateWord', { id, arab: na.trim(), indonesia: ni.trim() });
-  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b.textContent.replace('📖 ', '')); }
+  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b ? b.textContent : ''); }
 }
 async function delWord(id) {
   if (!confirm('Hapus kata ini?')) return;
   const r = await call('admin:deleteWord', { id });
-  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b.textContent.replace('📖 ', '')); }
+  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b ? b.textContent : ''); }
 }
 document.getElementById('adm-pass').addEventListener('keydown', e => { if (e.key === 'Enter') admLogin(); });
 connect();

@@ -7,7 +7,7 @@ const { io } = require("socket.io-client");
 const { WORDS } = require("../data/words");
 const { normalizeArabic } = require("../lib/normalize");
 
-const URL = "http://localhost:3000";
+const URL = process.env.URL || "http://localhost:3000";
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const emitAck = (sock, ev, data) => new Promise((res) => sock.emit(ev, data, res));
 
@@ -106,6 +106,52 @@ function solvePrompt(prompt, dir) {
   check("jeda antar sesi terjadi", sawIntermission);
   check("4 peserta (2 pemain + 2 bot)", total.length === 4);
   check("Ahmad juara umum (selalu benar, 2 sesi)", total[0].nis === "1001" && ahmad.score > 300);
+
+  /* ---------- uji mode baru (Solo Duolingo Mix: listen, jumble, truefalse, pairs) ---------- */
+  const solo = io(URL);
+  await new Promise((r) => solo.on("connect", r));
+  const seenTypes = new Set();
+  solo.on("game:question", async (q) => {
+    if (!q) return;
+    seenTypes.add(q.type);
+    let ans = "ngawur";
+    if (q.type === "pairs") ans = "PAIRS_DONE";
+    else if (q.type === "truefalse") ans = q.indonesiaText === q.pairedMeaning ? "BENAR" : "SALAH";
+    else if (q.type === "jumble") ans = q.arabicText;
+    else ans = solvePrompt(q.prompt, q.dir);
+    const r = await emitAck(solo, "player:answer", { text: ans });
+    if (r && r.next && seenTypes.size < 5) {
+      solo.emit("__test_loop"); // lanjut via rekursi ringan
+      seenTypes.add(r.next.type);
+      let ans2 = r.next.type === "pairs" ? "PAIRS_DONE" : (r.next.type === "jumble" ? r.next.arabicText : solvePrompt(r.next.prompt, r.next.dir));
+      const r2 = await emitAck(solo, "player:answer", { text: ans2 });
+      if (r2 && r2.next) {
+        seenTypes.add(r2.next.type);
+        const r3 = await emitAck(solo, "player:answer", { text: "PAIRS_DONE" });
+        if (r3 && r3.next) {
+          seenTypes.add(r3.next.type);
+          const r4 = await emitAck(solo, "player:answer", { text: r3.next.arabicText || "ngawur" });
+          if (r4 && r4.next) {
+            seenTypes.add(r4.next.type);
+            const r5 = await emitAck(solo, "player:answer", { text: "PAIRS_DONE" });
+            if (r5 && r5.next) seenTypes.add(r5.next.type);
+          }
+        }
+      }
+    }
+  });
+  const soloRes = await emitAck(solo, "solo:start", {
+    programId: progs.programs[0].id,
+    babIds: allBabIds,
+    nis: "1001",
+    type: "mix",
+    seconds: 15,
+  });
+  check("solo: mode latihan mandiri (mix) dimulai", soloRes.ok === true);
+  await wait(3800);
+  check("mix: menampilkan variasi mini-game (mc, listen, truefalse, jumble, pairs)",
+    seenTypes.has("mc") && seenTypes.has("listen") && seenTypes.has("truefalse") && seenTypes.has("jumble") && seenTypes.has("pairs"));
+  solo.disconnect();
 
   const ok = results.every(([, p]) => p);
   console.log(ok ? "\n🎉 SEMUA TES LOLOS" : "\n⚠️ ADA TES GAGAL");
