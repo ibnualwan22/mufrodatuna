@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sprint Mufrodat ⚡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ BERANDA ============ -->
+  <section id="view-home" class="view active">
+    <div class="hero">
+      <div class="logo">⚡</div>
+      <h1>Sprint Mufrodat</h1>
+      <p class="subtitle">Lomba kosakata Arab 60 detik.<br>Siapa tercepat & tertepat?</p>
+      <div class="howto">
+        <span>1️⃣ Ustadz buat room</span><span>2️⃣ Santri gabung pakai NIS</span><span>3️⃣ Jawab secepatnya!</span>
+      </div>
+      <button class="btn btn-primary" onclick="showHostSetup()">🎓 Buat Room (Ustadz)</button>
+      <button class="btn btn-secondary" onclick="showJoin()">📱 Gabung (Santri)</button>
+      <button class="btn btn-ghost" onclick="location.href='admin.html'" style="font-size:14px">🗂️ Kelola Mufrodat (Admin)</button>
+    </div>
+  </section>
+
+  <!-- ============ HOST: WIZARD ============ -->
+  <section id="view-host-setup" class="view">
+    <div class="card">
+      <h2>🎓 Buat Room</h2>
+      <div class="steps">
+        <div class="pill on" id="pill-1">1️⃣ Program</div>
+        <div class="pill" id="pill-2">2️⃣ Bab</div>
+        <div class="pill" id="pill-3">3️⃣ Sesi</div>
+      </div>
+      <div id="wz-1">
+        <h3>Langkah 1 — Pilih Program</h3>
+        <div id="wz-programs"></div>
+        <button class="btn btn-ghost" onclick="goHome()">← Kembali</button>
+      </div>
+      <div id="wz-2" style="display:none">
+        <h3>Langkah 2 — Pilih Bab</h3>
+        <p class="muted" id="wz-prog-name"></p>
+        <div id="wz-babs"></div>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="wzStep(1)">←</button>
+          <button class="btn btn-primary" onclick="wzStep(3)">Lanjut →</button>
+        </div>
+      </div>
+      <div id="wz-3" style="display:none">
+        <h3>Langkah 3 — Atur Sesi</h3>
+        <div id="wz-sessions"></div>
+        <button class="btn btn-secondary" id="btn-add-session" onclick="addSessionCfg()">+ Tambah Sesi 2</button>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="wzStep(2)">←</button>
+          <button class="btn btn-primary" onclick="finishWizard()">Buat Room ⚡</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOST: LOBI ============ -->
+  <section id="view-host-lobby" class="view">
+    <div class="card wide">
+      <h2>Ruang Tunggu</h2>
+      <div class="room-code-box">
+        <span class="label">KODE ROOM</span>
+        <span id="host-code" class="room-code">----</span>
+      </div>
+      <p class="muted">Santri masukkan kode ini + NIS di HP masing-masing</p>
+      <h3>Peserta (<span id="lobby-count">0</span>)</h3>
+      <ul id="lobby-list" class="player-list"></ul>
+      <div class="row">
+        <button class="btn btn-secondary" onclick="addBots()">🤖 Tambah 2 Bot</button>
+        <button id="btn-start" class="btn btn-primary" onclick="startGame()" disabled>Mulai Sprint ⚡</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOST: LIVE ============ -->
+  <section id="view-host-live" class="view">
+    <div class="card wide">
+      <div class="live-header">
+        <h2>🔴 Live</h2>
+        <div id="host-timer" class="timer">60</div>
+      </div>
+      <div id="host-board" class="board"></div>
+    </div>
+  </section>
+
+  <!-- ============ JEDA ANTAR SESI ============ -->
+  <section id="view-intermission" class="view">
+    <div class="card wide center">
+      <div class="logo">☕</div>
+      <h2>Jeda — Sesi <span id="int-next-n"></span> berikutnya</h2>
+      <p class="muted" id="int-desc"></p>
+      <div id="int-timer" class="timer" style="margin:12px auto">15</div>
+      <h3>Sementara (total)</h3>
+      <div id="int-board" class="board"></div>
+    </div>
+  </section>
+
+  <!-- ============ HOST: PODIUM ============ -->
+  <section id="view-host-podium" class="view">
+    <div class="card wide">
+      <h2>🏆 Juara Umum</h2>
+      <div id="podium" class="podium"></div>
+      <div id="host-results" class="board"></div>
+      <div class="row">
+        <button class="btn btn-secondary" onclick="location.reload()">Room Baru</button>
+        <button class="btn btn-ghost" onclick="location.href='admin.html'">🗂️ Kelola Mufrodat</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SANTRI: GABUNG ============ -->
+  <section id="view-join" class="view">
+    <div class="card">
+      <h2>📱 Gabung Lomba</h2>
+      <label>Kode Room</label>
+      <input id="join-code" class="input" placeholder="cth: AB12" maxlength="4" autocapitalize="characters">
+      <label>NIS</label>
+      <input id="join-nis" class="input" placeholder="Nomor Induk Santri" inputmode="numeric">
+      <div id="join-error" class="error"></div>
+      <button class="btn btn-primary" onclick="joinRoom()">Gabung ⚡</button>
+      <button class="btn btn-ghost" onclick="goHome()">← Kembali</button>
+    </div>
+  </section>
+
+  <!-- ============ SANTRI: TUNGGU ============ -->
+  <section id="view-waiting" class="view">
+    <div class="card center">
+      <div class="logo">⏳</div>
+      <h2 id="waiting-nama">Halo!</h2>
+      <p class="muted">Tunggu ustadz memulai sprint...</p>
+      <div class="spinner"></div>
+    </div>
+  </section>
+
+  <!-- ============ SANTRI: ARENA ============ -->
+  <section id="view-arena" class="view">
+    <div class="card wide">
+      <div class="arena-meta">
+        <div class="sess-badge" id="sess-badge">⚡ Sesi 1</div>
+        <div class="rank-chip" id="rank-chip">🏅 #–</div>
+      </div>
+      <div class="arena-top">
+        <div class="score-chip">⭐ <span id="arena-score">0</span></div>
+        <div id="arena-timer" class="timer small">60</div>
+        <div id="arena-streak" class="streak-chip">🔥 <span id="streak-n">0</span></div>
+      </div>
+      <div class="timer-bar"><div id="timer-fill"></div></div>
+      <div class="question-box">
+        <div id="q-label" class="q-label">Terjemahkan ke Arab:</div>
+        <div id="q-prompt" class="q-prompt" dir="auto">...</div>
+      </div>
+      <div class="answer-row" id="essay-row">
+        <input id="answer-input" class="input answer-input" placeholder="Ketik jawaban di sini..."
+               autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-primary" onclick="submitAnswer()">➤</button>
+      </div>
+      <div id="mc-options" class="mc-options" style="display:none"></div>
+      <div id="feedback" class="feedback"></div>
+      <p class="hint">💡 Jawaban Arab boleh <b>tanpa harakat</b> — mis. ketik <span dir="rtl">كتاب</span> untuk <span dir="rtl">كِتَابٌ</span>. Aktifkan keyboard Arab di HP-mu ⌨️</p>
+      <details class="mini-board-wrap">
+        <summary>Lawan ⚔️ (<span id="mini-count">0</span>)</summary>
+        <div id="mini-board" class="board mini"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ SANTRI: HASIL ============ -->
+  <section id="view-result" class="view">
+    <div class="card center">
+      <div class="logo">🏁</div>
+      <h2>Waktu Habis!</h2>
+      <div id="my-rank" class="my-rank"></div>
+      <div id="my-stats" class="stats"></div>
+      <div id="result-board" class="board"></div>
+      <button class="btn btn-ghost" onclick="location.reload()">← Keluar</button>
+    </div>
+  </section>
+
+  <!-- ============ COUNTDOWN OVERLAY ============ -->
+  <div id="countdown" class="countdown hidden"><span id="countdown-n">3</span></div>
+
+</div>
+<canvas id="confetti"></canvas>
+<script src="app.js"></script>
+</body>
+</html>

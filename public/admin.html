@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Mufrodat 🗂️</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app" style="max-width:900px">
+
+  <section id="adm-login" class="view active">
+    <div class="card" style="max-width:420px;margin:40px auto">
+      <h2>🔐 Admin Mufrodat</h2>
+      <label>Password admin</label>
+      <input id="adm-pass" type="password" class="input" placeholder="••••••">
+      <div id="adm-err" class="error"></div>
+      <button class="btn btn-primary" onclick="admLogin()">Masuk</button>
+      <button class="btn btn-ghost" onclick="location.href='/'">← Kembali ke game</button>
+    </div>
+  </section>
+
+  <section id="adm-main" class="view">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>🗂️ Kelola Mufrodat</h2>
+        <button class="icon-btn" onclick="location.href='/'">🎮 Game</button>
+      </div>
+      <div class="admin-grid">
+        <div>
+          <h3 class="section-title">Program</h3>
+          <div id="adm-programs"></div>
+          <div class="form-row">
+            <input id="new-program" class="input" placeholder="Nama program baru...">
+            <button class="btn btn-secondary" onclick="addProgram()">+ Tambah</button>
+          </div>
+          <h3 class="section-title">Bab <span id="bab-for" class="muted"></span></h3>
+          <div id="adm-babs"></div>
+          <div class="form-row">
+            <input id="new-bab" class="input" placeholder="Judul bab baru...">
+            <button class="btn btn-secondary" onclick="addBab()">+ Tambah</button>
+          </div>
+        </div>
+        <div>
+          <h3 class="section-title">Kata <span id="word-for" class="muted"></span> (<span id="word-count">0</span>)</h3>
+          <div id="adm-words" style="max-height:420px;overflow-y:auto"></div>
+          <div class="form-row">
+            <input id="new-ar" class="input" dir="rtl" lang="ar" placeholder="كِتَابٌ">
+            <input id="new-id" class="input" placeholder="arti...">
+            <button class="btn btn-secondary" onclick="addWord()">+ Tambah</button>
+          </div>
+          <p class="hint">💡 Tulis Arab <b>dengan harakat</b> — pemain boleh menjawab tanpa harakat.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let socket, PASS = sessionStorage.getItem('admPass') || '';
+let curProgram = null, curBab = null;
+const BASE = (() => { const p = location.pathname; return (p === '/game' || p.indexOf('/game/') === 0) ? '/game' : ''; })();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const show = id => { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+const call = (ev, args={}) => new Promise(res => socket.emit(ev, { password: PASS, ...args }, res));
+
+function connect() {
+  const s = document.createElement('script');
+  s.src = BASE + '/socket.io/socket.io.js';
+  s.onload = () => { socket = io({ path: BASE + '/socket.io/' }); if (PASS) tryLogin(true); };
+  document.head.appendChild(s);
+}
+async function admLogin() {
+  PASS = document.getElementById('adm-pass').value;
+  tryLogin(false);
+}
+async function tryLogin(silent) {
+  const r = await new Promise(res => socket.emit('admin:login', { password: PASS }, res));
+  if (r.ok) { sessionStorage.setItem('admPass', PASS); show('adm-main'); loadPrograms(); }
+  else if (!silent) document.getElementById('adm-err').textContent = 'Password salah.';
+  else show('adm-login');
+}
+
+async function loadPrograms() {
+  const r = await call('admin:listPrograms');
+  if (r.error) return alert(r.error);
+  const el = document.getElementById('adm-programs');
+  el.innerHTML = r.programs.map(p => `
+    <div class="bab-item ${p.id === curProgram ? 'sel' : ''}" onclick="selProgram(${p.id}, '${esc(p.nama)}')">
+      <span>📚 ${esc(p.nama)}</span><span class="muted">${p.jml_bab} bab • ${p.jml_kata} kata</span>
+    </div>`).join('') || '<p class="muted">Belum ada program.</p>';
+  if (!curProgram && r.programs.length) selProgram(r.programs[0].id, r.programs[0].nama);
+}
+async function selProgram(id, nama) {
+  curProgram = id; curBab = null;
+  document.getElementById('bab-for').textContent = '— ' + nama;
+  const r = await call('admin:getBabs', { programId: id });
+  const el = document.getElementById('adm-babs');
+  el.innerHTML = r.babs.map(b => `
+    <div class="bab-item ${b.id === curBab ? 'sel' : ''}" onclick="selBab(${b.id}, '${esc(b.judul)}')">
+      <span>📖 ${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
+    </div>`).join('') || '<p class="muted">Belum ada bab.</p>';
+  loadPrograms();
+}
+async function selBab(id, judul) {
+  curBab = id;
+  document.getElementById('word-for').textContent = '— ' + judul;
+  const r = await call('admin:getWords', { babId: id });
+  document.getElementById('word-count').textContent = r.words.length;
+  document.getElementById('adm-words').innerHTML = r.words.map(w => `
+    <div class="word-row">
+      <span class="ar" dir="rtl">${esc(w.arab)}</span>
+      <span class="id">${esc(w.indonesia)}</span>
+      <button class="icon-btn" onclick="editWord(${w.id}, '${esc(w.arab)}', '${esc(w.indonesia)}')">✏️</button>
+      <button class="icon-btn danger" onclick="delWord(${w.id})">🗑️</button>
+    </div>`).join('') || '<p class="muted">Belum ada kata di bab ini.</p>';
+  selProgramRefresh();
+}
+async function selProgramRefresh() {
+  const r = await call('admin:getBabs', { programId: curProgram });
+  document.getElementById('adm-babs').innerHTML = r.babs.map(b => `
+    <div class="bab-item ${b.id === curBab ? 'sel' : ''}" onclick="selBab(${b.id}, '${esc(b.judul)}')">
+      <span>📖 ${esc(b.judul)}</span><span class="muted">${b.jml_kata} kata</span>
+    </div>`).join('');
+}
+
+async function addProgram() {
+  const nama = document.getElementById('new-program').value.trim();
+  if (!nama) return;
+  const r = await call('admin:addProgram', { nama });
+  if (!r.error) { document.getElementById('new-program').value = ''; curProgram = null; loadPrograms(); }
+}
+async function addBab() {
+  if (!curProgram) return alert('Pilih program dulu.');
+  const judul = document.getElementById('new-bab').value.trim();
+  if (!judul) return;
+  const r = await call('admin:addBab', { programId: curProgram, judul });
+  if (!r.error) { document.getElementById('new-bab').value = ''; selProgram(curProgram); }
+}
+async function addWord() {
+  if (!curBab) return alert('Pilih bab dulu.');
+  const arab = document.getElementById('new-ar').value.trim();
+  const indonesia = document.getElementById('new-id').value.trim();
+  if (!arab || !indonesia) return alert('Isi kata Arab dan artinya.');
+  const r = await call('admin:addWord', { babId: curBab, arab, indonesia });
+  if (!r.error) {
+    document.getElementById('new-ar').value = '';
+    document.getElementById('new-id').value = '';
+    const b = document.querySelector(`#adm-babs .bab-item.sel span`);
+    selBab(curBab, b ? b.textContent.replace('📖 ', '') : '');
+  }
+}
+async function editWord(id, arab, indonesia) {
+  const na = prompt('Kata Arab (dengan harakat):', arab);
+  if (na === null) return;
+  const ni = prompt('Arti Indonesia:', indonesia);
+  if (ni === null) return;
+  const r = await call('admin:updateWord', { id, arab: na.trim(), indonesia: ni.trim() });
+  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b.textContent.replace('📖 ', '')); }
+}
+async function delWord(id) {
+  if (!confirm('Hapus kata ini?')) return;
+  const r = await call('admin:deleteWord', { id });
+  if (!r.error) { const b = document.querySelector(`#adm-babs .bab-item.sel span`); selBab(curBab, b.textContent.replace('📖 ', '')); }
+}
+document.getElementById('adm-pass').addEventListener('keydown', e => { if (e.key === 'Enter') admLogin(); });
+connect();
+</script>
+</body>
+</html>
