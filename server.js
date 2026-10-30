@@ -37,6 +37,7 @@ const io = new Server(server);
 
 const DEFAULT_SECONDS = parseInt(process.env.SPRINT_SECONDS || "60", 10);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "mufrodat123";
+app.use('/api/learn', require('./lib/learning')(ADMIN_PASSWORD));
 if (!process.env.ADMIN_PASSWORD) {
   console.log("⚠️  ADMIN_PASSWORD tidak diset — pakai default 'mufrodat123'. Ganti di production!");
 }
@@ -424,4 +425,4 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🎮 Sprint Mufrodat jalan di http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🎮 Sprint Mufrodat jalan di http://localhost:${server.address().port}`));
