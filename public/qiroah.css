@@ -1,0 +1,30 @@
+/* Scoped copies of style.css tokens: never restyle Sprint or existing Learn. */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+.qiroah { --bg-canvas:#FAF8F4; --surface:#FFFFFF; --gold-100:#F5E8C4; --gold-400:#D4AF37; --gold-500:#C59B27; --ink-900:#181510; --border-default:#DCD4C4; --ease-spring:cubic-bezier(0.34,1.45,0.64,1); background:var(--bg-canvas); color:var(--ink-900); font-family:'Cairo',sans-serif; border:1.5px solid var(--border-default); border-bottom-width:4px; border-radius:22px; padding:clamp(16px,3vw,28px); margin:32px 0; }
+.qiroah [hidden] { display:none !important; }
+.qiroah p { margin:12px 0; }
+.qiroah label { display:block; margin-top:16px; font-weight:700; }
+.qiroah input,.qiroah textarea,.qiroah select { width:100%; background:var(--surface); color:var(--ink-900); border:1.5px solid var(--border-default); border-radius:12px; padding:12px; font:inherit; }
+.qiroah textarea[lang=ar],.qiroah .q-ar { font-family:'Cairo',sans-serif; font-size:clamp(26px,4vw,36px); line-height:2.3; white-space:pre-wrap; overflow-wrap:anywhere; }
+.qiroah .q-ar { margin:20px 0; background:var(--surface); padding:16px; border-radius:14px; }
+.qiroah textarea:read-only { background:#F6F3EC; }
+.qiroah button { font-family:inherit; }
+.qiroah .button.primary { background:var(--gold-400); color:var(--ink-900); border-color:var(--gold-500); }
+.qiroah .button { margin:6px 6px 6px 0; white-space:normal; }
+.qiroah .q-highlight { background:var(--gold-100); border-bottom:3px solid var(--gold-500); cursor:pointer; }
+.qiroah .q-highlight.q-mark { display:inline-block; min-width:28px; text-align:center; }
+.qiroah .q-select { user-select:text; -webkit-user-select:text; }
+.qiroah .q-select span { cursor:text; }
+.qiroah :focus-visible { outline:3px solid #785A08; outline-offset:4px; }
+.qiroah .q-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border-default); overflow-wrap:anywhere; }
+.qiroah .q-row>div,.qiroah .q-row>strong { flex:1; min-width:150px; }
+.qiroah #qp-mascot { width:100px; }
+.qiroah #qp-question { border-top:2px solid var(--gold-400); margin-top:24px; padding-top:16px; }
+.qiroah .answer-option { min-height:48px; overflow-wrap:anywhere; }
+.qiroah .answer-option.correct { background:var(--gold-100); border-color:var(--gold-500); color:var(--ink-900); opacity:1; }
+.qiroah button { transition:transform 140ms var(--ease-spring); }
+.qiroah button:active { transform:scale(.97); }
+@media (prefers-reduced-motion:reduce) { .qiroah button { transition:none; } .qiroah button:active { transform:none; } }
+.reduce-motion .qiroah button { transition:none; }
+.reduce-motion .qiroah button:active { transform:none; }
+@media(max-width:600px) { .qiroah .section-heading { flex-wrap:wrap; } }

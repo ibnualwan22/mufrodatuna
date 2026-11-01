@@ -1,5 +1,7 @@
 import {$,esc,icon,fillIcons,api} from './learn-shared.js';
+import {initQiroahAdmin} from './qiroah-admin.js';
 let password='',catalog=null,programId=null,chapterId=null,editingItem=null,editingChapter=false,items=[],deleteAction=null,loading=0;
+const qiroahAdmin=initQiroahAdmin(()=>password);
 const call=(path,body,method)=>api(`/admin${path}`,body,{...(method?{method}:{}),headers:{authorization:`Bearer ${password}`}});
 const fail=(id,e)=>{$(id).hidden=false;$(id).textContent=e.message;};
 const clear=id=>{$(id).hidden=true;$(id).textContent='';};
@@ -25,8 +27,8 @@ function itemData(){const input=Object.fromEntries(['arab','meaning','context','
 function preview(){const data=itemData();$('preview-arab').textContent=data.arab || '…';$('preview-meaning').textContent=data.meaning || 'Arti akan muncul di sini';$('preview-context').textContent=data.context;$('preview-pattern').textContent=data.pattern;}
 function askDelete(description,action){deleteAction=action;$('delete-description').textContent=description;clear('delete-error');$('delete-dialog').showModal();}
 fillIcons();
-$('login-form').onsubmit=async e=>{e.preventDefault();password=$('password').value;clear('login-error');const b=e.submitter;b.disabled=true;try{await refresh();$('login-panel').hidden=true;$('editor-panel').hidden=false;$('password').value='';}catch(err){fail('login-error',err);password='';}finally{b.disabled=false;}};
-$('logout').onclick=()=>{password='';loading++;$('editor-panel').hidden=true;$('login-panel').hidden=false;};
+$('login-form').onsubmit=async e=>{e.preventDefault();password=$('password').value;clear('login-error');const b=e.submitter;b.disabled=true;try{await refresh();$('login-panel').hidden=true;$('editor-panel').hidden=false;$('password').value='';await qiroahAdmin.refresh();}catch(err){fail('login-error',err);password='';}finally{b.disabled=false;}};
+$('logout').onclick=()=>{password='';loading++;qiroahAdmin.reset();$('editor-panel').hidden=true;$('login-panel').hidden=false;};
 $('program').onchange=async e=>{programId=Number(e.target.value);chapterId=null;try{await refresh();}catch(err){fail('admin-status',err);}};
 $('chapters').onclick=e=>{const b=e.target.closest('[data-chapter]');if(!b)return;chapterId=Number(b.dataset.chapter);document.querySelectorAll('.chapter-select').forEach(el=>el.classList.toggle('active',el===b));loadItems();};
 $('item-list').onclick=e=>{const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');if(edit)editItem(items.find(i=>i.id===Number(edit.dataset.edit)));if(del){const id=Number(del.dataset.delete);askDelete('Materi ini akan dihapus dari bab. Latihan yang sudah dimulai tetap dapat diselesaikan.',()=>call(`/items/${id}`,undefined,'DELETE'));}};

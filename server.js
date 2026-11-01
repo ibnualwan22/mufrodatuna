@@ -12,6 +12,7 @@ const https = require("https");
 const { Server } = require("socket.io");
 const { isCorrect } = require("./lib/normalize");
 const db = require("./lib/db");
+const qiroah = require('./lib/qiroah');
 
 const app = express();
 app.use(express.static("public"));
@@ -393,8 +394,12 @@ io.on("connection", (socket) => {
 
   /* ---------- admin (kelola mufrodat) ---------- */
   const needAuth = (password) => password === ADMIN_PASSWORD;
-  socket.on("admin:login", ({ password }, cb) => cb({ ok: needAuth(password) }));
+  socket.on("admin:login", (args, cb) => {
+    if (typeof cb === 'function') cb({ ok: needAuth(args?.password) });
+  });
   const admin = (ev, fn) => socket.on(ev, (args = {}, cb) => {
+    if (typeof cb !== 'function') return;
+    if (!args || typeof args !== 'object' || Array.isArray(args)) return cb({ error: 'Payload tidak valid.' });
     if (!needAuth(args.password)) return cb({ error: "Password salah." });
     try { cb({ ok: true, ...fn(args) }); } catch (e) { cb({ error: e.message }); }
   });
@@ -408,6 +413,19 @@ io.on("connection", (socket) => {
   admin("admin:addWord", ({ babId, arab, indonesia }) => ({ id: db.addWord(babId, arab, indonesia) }));
   admin("admin:updateWord", ({ id, arab, indonesia }) => (db.updateWord(id, arab, indonesia), {}));
   admin("admin:deleteWord", ({ id }) => (db.deleteWord(id), {}));
+
+  admin('admin:qiroahList', () => ({ texts: db.listQiroahTexts() }));
+  admin('admin:qiroahGet', ({ id }) => ({ text: db.getQiroahText(id) }));
+  admin('admin:qiroahSave', args => ({ text: db.saveQiroahText(args) }));
+  admin('admin:qiroahDelete', ({ id }) => ({ deleted: db.deleteQiroahText(id) }));
+  const publicQiroah = (event, fn) => socket.on(event, (args, cb) => {
+    if (typeof cb !== 'function') return;
+    try { qiroah.object(args); cb({ ok: true, ...fn(args) }); }
+    catch (error) { cb({ error: error.message }); }
+  });
+  // Practice v1 intentionally exposes annotations; scoring happens locally.
+  publicQiroah('qiroah:list', () => ({ texts: db.listQiroahTexts() }));
+  publicQiroah('qiroah:get', ({ id }) => ({ text: db.getQiroahText(id) }));
 
   socket.on("disconnect", () => {
     const room = socket.data.roomCode && rooms.get(socket.data.roomCode);
