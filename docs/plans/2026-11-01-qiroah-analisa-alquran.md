@@ -1,7 +1,22 @@
 # Analisa Al-Qur’an — penyesuaian kebutuhan Mufrodatuna
 
-Status: audit dan spesifikasi usulan; belum ada perubahan kode aplikasi.
+Status: implementasi selesai dan diuji secara lokal; belum dipublikasikan ke server produksi.
 Tanggal pemeriksaan sumber: 1 November 2026.
+
+## Hasil implementasi
+
+- Kartu **Analisa Al-Qur’an** tersedia di Qiroah dan membuka `public/qiroah-quran.html`. Pemilih memuat 114 surah dan 6.236 ayat dari salinan dataset lokal.
+- Pemilihan bacaan memiliki mode **Pilih sendiri** dan **Acak**. Mode acak memilih ayat dengan analisis aktif yang dapat dipetakan, menampilkan pratinjau sebelum bermain, dan melewati pilihan sebelumnya saat diacak ulang. Status nonaktif/perlu koreksi dari admin langsung memengaruhi kelayakan pemilihan.
+- Basmalah pembuka tambahan pada ayat pertama tidak ditampilkan di luar Al-Fatihah. Basmalah di dalam isi ayat, termasuk An-Naml 27:30, tetap tampil. Teks dan koordinat sumber di database tetap utuh; koordinat sorotan disesuaikan pada respons bacaan siswa maupun admin tanpa migrasi data lama.
+- Pertanyaan langsung tersedia dengan status **Dari sumber · belum ditinjau admin**. Satu sesi memuat maksimal 12 segmen berurutan, menggunakan jenis kata, akar, aspek fi‘il, kasus isim, atau mood fi‘il yang tersedia. Jawaban dan versi revisi dikunci saat sesi dibuat.
+- Halaman admin menyediakan verifikasi per bidang, koreksi beralasan dan berujukan, penonaktifan, riwayat, serta pemulihan revisi. Laporan siswa menyertakan konteks soal dan masuk daftar peninjauan admin.
+- Teks mushaf dan paket sumber dipertahankan utuh. Pemetaan penuh berhasil pada 6.234 ayat; dua kata dengan perbedaan ejaan (`12:39:1` dan `12:41:1`) dikecualikan dari soal. Kata lain dalam kedua ayat tetap dapat digunakan. Ayat tanpa analisis yang sesuai, seperti huruf muqatta‘ah saja, menampilkan keadaan tanpa soal.
+- Arsip, versi, URL, tanggal pengambilan, dan checksum ada di `public/quran-sources/manifest.json`. Paket Corpus diperoleh dari salinan publik yang mempertahankan pemberitahuan asli; asal salinan dijelaskan di `public/quran-sources.html`. Footer menghubungkan Corpus, Tanzil, dan halaman lisensi lengkap, termasuk salinan GPL.
+- Impor awal berjalan otomatis saat server dimulai, secara transaksional dan idempoten, ke tabel berprefiks `quran_` pada `DB_PATH` yang sama. Koreksi disimpan terpisah dari analisis sumber. Perubahan versi dataset memerlukan migrasi eksplisit agar tidak menimpa koreksi.
+- Sesi permainan berada di memori server, berakhir setelah 30 menit tanpa aktivitas, dan perlu dimulai ulang bila server direstart. Riwayat koreksi admin tersimpan di SQLite.
+- Validasi: 16 tes otomatis lulus, termasuk semua pembuka surah, koordinat sorotan, dan pemilihan acak; alur kartu, pilihan ayat, jawaban, laporan, verifikasi, dan pemulihan diuji melalui browser. Mode acak, perpindahan ke pilihan manual, dan pemulihan koneksi juga diperiksa. Tampilan desktop dan ponsel diperiksa tanpa galat JavaScript atau luapan horizontal.
+
+Untuk menjalankan perubahan pada proses server yang sudah aktif, restart server sekali dengan perintah proyek yang biasa dipakai. Game dibuka melalui **Qiroah → Analisa Al-Qur’an**. Rincian di bawah merekam keputusan dan rancangan awal yang mendasari implementasi.
 
 ## Keputusan pengguna
 
@@ -166,4 +181,4 @@ Tahap pertama dimulai dengan sampel data nyata berizin untuk validasi pemetaan; 
 | Koreksi sebagai revisi terpisah | Menimpa berkas sumber | Menjaga provenance dan memudahkan pemulihan; tetap memerlukan pemeriksaan izin adaptasi |
 | Fokus awal morfologi | Semua wazan/nahwu langsung lengkap | Cakupan dataset tidak seragam |
 
-Dokumen ini menggantikan perluasan scope pada prompt awal. Langkah berikutnya adalah implementasi setelah persetujuan atas tahap audit, sebagaimana diminta dalam lampiran.
+Dokumen ini menyesuaikan cakupan prompt awal dengan keputusan pengguna. Implementasi dilakukan setelah persetujuan pengguna atas tahap audit dan pilihan bahwa soal sumber boleh langsung dimainkan.

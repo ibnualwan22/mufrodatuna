@@ -39,6 +39,7 @@ const io = new Server(server);
 const DEFAULT_SECONDS = parseInt(process.env.SPRINT_SECONDS || "60", 10);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "mufrodat123";
 app.use('/api/learn', require('./lib/learning')(ADMIN_PASSWORD));
+app.use('/api/qiroah/quran', require('./lib/quran')(ADMIN_PASSWORD));
 if (!process.env.ADMIN_PASSWORD) {
   console.log("⚠️  ADMIN_PASSWORD tidak diset — pakai default 'mufrodat123'. Ganti di production!");
 }

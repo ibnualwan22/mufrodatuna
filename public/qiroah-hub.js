@@ -3,6 +3,7 @@ import {io} from './socket.io/socket.io.esm.min.js';
 import {optionsFor,award,labels} from './qiroah-core.mjs';
 import {qiroahGames} from './qiroah-catalog.js';
 const requestedMode=new URLSearchParams(location.search).get('mode');
+if(requestedMode==='quran')location.replace('qiroah-quran.html');
 const entryMode=Object.hasOwn(qiroahGames,requestedMode)?requestedMode:null;
 const socket=io({path:BASE+'/socket.io',autoConnect:false});
 const call=(event,data={})=>new Promise((resolve,reject)=>{socket.connect();socket.timeout(10000).emit(event,data,(err,r)=>err?reject(new Error('Koneksi terputus. Silakan coba lagi.')):r?.error?reject(new Error(r.error)):resolve(r));});

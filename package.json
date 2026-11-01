@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test test/learning.test.js test/qiroah.test.js",
+    "test": "node --test test/learning.test.js test/qiroah.test.js test/quran.test.js",
     "test:legacy": "node test/simulate.js"
   },
   "dependencies": {
