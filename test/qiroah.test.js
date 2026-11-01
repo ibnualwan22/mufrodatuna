@@ -124,7 +124,8 @@ test('Qiroah Socket.IO admin auth, public practice, CRUD and malformed payload s
   }
   assert.equal((await call('admin:login', { password })).ok, true);
   assert.ok((await call('admin:qiroahSave', fixture())).error, 'login never bypasses per-event password');
-  assert.deepEqual(await call('qiroah:list', {}), { ok: true, texts: [] });
+  const initial = await call('qiroah:list', {});
+  assert.ok(initial.texts.some(item => item.judul === 'Air yang Dapat Dipakai Bersuci'));
   const saved = await admin('admin:qiroahSave', fixture());
   assert.equal(saved.ok, true);
   assert.equal(saved.text.teks, fixture().teks);
@@ -144,9 +145,9 @@ test('Qiroah Socket.IO admin auth, public practice, CRUD and malformed payload s
   socket.emit('admin:qiroahDelete', { id, password }, 'not-a-function');
   socket.emit('qiroah:get', null);
   socket.emit('admin:login', null);
-  assert.equal((await call('qiroah:list', {})).texts.length, 1);
+  assert.equal((await call('qiroah:list', {})).texts.length, initial.texts.length + 1);
   assert.deepEqual(await admin('admin:qiroahDelete', { id }), { ok: true, deleted: 1 });
   assert.ok((await call('qiroah:get', { id })).error);
-  assert.deepEqual(await call('qiroah:list', {}), { ok: true, texts: [] });
+  assert.deepEqual(await call('qiroah:list', {}), initial);
   assert.ok((await admin('admin:qiroahDelete', { id })).error);
 });

@@ -1,4 +1,5 @@
 import { $, esc, icon, fillIcons, mascot, memory, preferences, reduced, animate, stopMotion, setPose, api, audio, savePreferences } from './learn-shared.js';
+import {qiroahCards} from './qiroah-catalog.js';
 
 const games = {
  choice:{name:'Pilih Makna',tag:'KENALI KATA',description:'Satu kata, satu makna. Seberapa banyak yang kamu tahu?',bg:'#fff6db',ink:'#a18736',art:'choice'},
@@ -8,8 +9,9 @@ const games = {
  dialogue:{name:'Sambung Percakapan',tag:'COBA UNGKAPKAN',description:'Ada cerita kecil. Apa yang akan kamu ucapkan?',bg:'#fbefeb',ink:'#b78c7c',art:'dialogue'},
  cloze:{name:'Lengkapi Pola',tag:'TEMUKAN POLANYA',description:'Isi bagian yang hilang dan buat kalimatmu sendiri.',bg:'#edf3ed',ink:'#819b80',art:'cloze'},
 };
-const categoryNames={mufrodat:'Mufrodat',tabirot:'Ta’birot',uslub:'Uslub'};
-let catalog=null, category='mufrodat', session=null, selected=null, picked=[], pairSelection={left:null,right:null};
+const categoryNames={mufrodat:'Mufrodat',tabirot:'Ta’birot',uslub:'Uslub',qiroah:'Qiroah'};
+const requestedCategory=new URLSearchParams(location.search).get('category');
+let catalog=null, category=Object.hasOwn(categoryNames,requestedCategory)?requestedCategory:'mufrodat', session=null, selected=null, picked=[], pairSelection={left:null,right:null};
 let epoch=0, busy=false, view='home', modeForDialog='choice';
 const history=()=>memory.get('mufrodat.history',[]);
 function errorAt(id,error){$(id).textContent=error?.message || String(error);$(id).hidden=false;}
@@ -28,7 +30,13 @@ function art(type){
  if(type==='arrange')return '<span class="mini-tiles" dir="rtl"><span>أَنَا</span><span>أَتَعَلَّمُ</span></span>';
  return `<span class="art-chat" lang="ar" dir="rtl">${type==='dialogue'?'كَيْفَ حَالُكَ؟':'أُرِيدُ ...'}</span>`;
 }
-function renderCatalog(){if(!catalog)return;
+function renderCatalog(){
+ document.querySelectorAll('[data-category]').forEach(b=>{const active=b.dataset.category===category;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
+ const isQiroah=category==='qiroah';
+ document.querySelector('.theme-heading').hidden=isQiroah;
+ $('themes').hidden=isQiroah;
+ if(isQiroah){$('games').innerHTML=qiroahCards();$('catalog-status').hidden=true;return;}
+ if(!catalog){$('games').replaceChildren();$('catalog-status').hidden=false;$('catalog-status').textContent='Menyiapkan permainanmu…';return;}
  const chapters=catalog.chapters.filter(c=>c.category===category);
  $('games').innerHTML=Object.entries(games).filter(([mode])=>catalog.modes[mode].categories.includes(category)).map(([mode,g])=>{
  const count=chapters.filter(c=>c.modes[mode]).length;
@@ -39,7 +47,7 @@ function renderCatalog(){if(!catalog)return;
  $('catalog-status').hidden=chapters.length>0;
  if(!chapters.length)$('catalog-status').textContent='Materi kategori ini sedang disiapkan. Coba kategori lainnya.';
 }
-async function loadCatalog(){try{catalog=await api('/catalog');renderCatalog();}catch(e){$('catalog-status').hidden=false;$('catalog-status').innerHTML=`<p>${esc(e.message)}</p><button id="retry-catalog" class="button subtle">Coba lagi</button>`;$('retry-catalog').onclick=loadCatalog;}}
+async function loadCatalog(){try{catalog=await api('/catalog');renderCatalog();}catch(e){if(category==='qiroah')return;$('catalog-status').hidden=false;$('catalog-status').innerHTML=`<p>${esc(e.message)}</p><button id="retry-catalog" class="button subtle">Coba lagi</button>`;$('retry-catalog').onclick=loadCatalog;}}
 function themeCard(c,mode){const count=c.modes[mode];return `<button class="theme-card" data-start="${c.id}" ${count?'':'disabled'}><span class="theme-icon">${icon('book')}</span><span><strong>${esc(c.title)}</strong><small>${count?`${Math.min(count,8)} materi · ${esc(c.description)}`:'Materi untuk mode ini belum cukup.'}</small></span><span class="arrow-icon">${icon('arrow')}</span></button>`;}
 function chooseTheme(mode,chapterId){if(!catalog)return;audio.effect('tap');modeForDialog=mode;clearError('start-error');$('theme-dialog-title').textContent=games[mode].name;$('theme-dialog-copy').textContent=`Pilih tema ${categoryNames[category]} yang ingin kamu latih.`;
  const chapters=catalog.chapters.filter(c=>c.category===category && (!chapterId || c.id===chapterId));
@@ -123,13 +131,13 @@ function showResult(){switchView('result');memory.remove('mufrodat.active');cons
 }
 function renderHistory(){const rows=history();$('history').innerHTML=rows.length?rows.map(h=>`<div class="history-card"><span class="history-icon">${icon('flag')}</span><div><b>${esc(h.title)}</b><p>${games[h.mode]?.name || 'Latihan'} · ${new Date(h.date).toLocaleDateString('id-ID',{day:'numeric',month:'long'})} · ${h.studied} materi</p></div><strong>+${h.score} XP</strong></div>`).join(''):`<div class="state-panel"><span class="empty-icon">${icon('flag')}</span><h2>Langkah pertamamu menunggu.</h2><p>Selesaikan satu latihan, lalu lihat perjalananmu di sini.</p><button class="button primary" id="history-start">Pilih permainan ${icon('arrow')}</button></div>`;if($('history-start'))$('history-start').onclick=()=>switchView('home');}
 function settingsUI(){for(const key of ['sfx','speech','motion'])$(`setting-${key}`).checked=!!preferences[key];$('quick-sound').innerHTML=icon(preferences.sfx?'volume':'mute');$('quick-sound').setAttribute('aria-pressed',String(!preferences.sfx));$('quick-sound').setAttribute('aria-label',preferences.sfx?'Matikan efek suara':'Aktifkan efek suara');}
-fillIcons();$('welcome-mascot').innerHTML=mascot('welcome');updateTotals();updateResume();settingsUI();loadCatalog();
+fillIcons();$('welcome-mascot').innerHTML=mascot('welcome');updateTotals();updateResume();settingsUI();renderCatalog();loadCatalog();
 const sprite=new Image();sprite.src='assets/mascot-poses.png';sprite.decode?.().catch(()=>{});
-document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{category=b.dataset.category;document.querySelectorAll('[data-category]').forEach(t=>{t.classList.toggle('active',t===b);t.setAttribute('aria-pressed',String(t===b));});audio.effect('tap');renderCatalog();});
+document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{category=b.dataset.category;const url=new URL(location.href);url.searchParams.set('category',category);window.history.replaceState(null,'',url);audio.effect('tap');renderCatalog();if(!catalog&&category!=='qiroah')loadCatalog();});
 $('games').onclick=e=>{const b=e.target.closest('[data-game]');if(b)chooseTheme(b.dataset.game);};
 $('themes').onclick=e=>{const b=e.target.closest('[data-theme]');if(b)chooseTheme('choice',Number(b.dataset.theme));};
 $('theme-options').onclick=e=>{const b=e.target.closest('[data-start]');if(b)start(Number(b.dataset.start),modeForDialog);};
-$('recommended').onclick=()=>chooseTheme('choice');$('resume').onclick=resume;
+$('recommended').onclick=()=>category==='qiroah'?location.assign('qiroah.html?mode=explore'):chooseTheme('choice');$('resume').onclick=resume;
 document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>switchView(b.dataset.nav));
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 $('theme-dialog').addEventListener('close',()=>{if(busy&&view!=='lesson'){epoch++;busy=false;}});
