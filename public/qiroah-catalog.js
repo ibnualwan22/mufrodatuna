@@ -5,7 +5,7 @@ export const qiroahGames = {
   explore: {name:'Eksplorasi Kata', tag:'KENALI BAGIAN KALIMAT', description:'Ketuk satu kata. Temukan bentuk dan kedudukannya dalam kalimat.', bg:'#fff6db', ink:'#a18736'},
   bedah: {name:'Bedah Kalimat', tag:'PAHAMI LANGKAH DEMI LANGKAH', description:'Telusuri bacaan, satu bagian setiap kali. Pahami alasan di baliknya.', bg:'#eef4e8', ink:'#829b68'},
   detective: {name:'Detektif Analisis', tag:'TEMUKAN KEKELIRUANNYA', description:'Ada analisis yang kurang tepat. Cari petunjuk dan pelajari koreksinya.', bg:'#f3edf8', ink:'#a08bb6'},
-  reading: {name:'Latihan Membaca', tag:'BACA DENGAN PERCAYA DIRI', description:'Coba tanpa harakat, buka bantuan, lalu rekam dan dengarkan bacaanmu.', bg:'#edf3f8', ink:'#789cb6'},
+  reading: {name:'Latihan Membaca', tag:'BUNYIKAN AKHIR KATA', description:'Baca kata yang disorot tanpa harakat. Lihat bunyi akhir yang terdengar dan pelajari i‘rabnya.', bg:'#edf3f8', ink:'#789cb6'},
 };
 
 // Illustrations use the same paper tiles, soft colors and outline weight as the other games.

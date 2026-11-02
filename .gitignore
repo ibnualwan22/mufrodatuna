@@ -2,3 +2,6 @@
 node_modules/
 data/*.db
 .env
+services/qiroah-speech/.venv/
+services/qiroah-speech/model/
+services/qiroah-speech/__pycache__/

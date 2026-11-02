@@ -13,6 +13,7 @@ const { Server } = require("socket.io");
 const { isCorrect } = require("./lib/normalize");
 const db = require("./lib/db");
 const qiroah = require('./lib/qiroah');
+const { ReadingSessions } = require('./lib/qiroah-sessions');
 
 const app = express();
 app.use(express.static("public"));
@@ -35,6 +36,7 @@ app.get("/api/tts", (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server);
+const readingSessions = new ReadingSessions(db);
 
 const DEFAULT_SECONDS = parseInt(process.env.SPRINT_SECONDS || "60", 10);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "mufrodat123";
@@ -417,6 +419,8 @@ io.on("connection", (socket) => {
 
   admin('admin:qiroahList', () => ({ texts: db.listQiroahTexts() }));
   admin('admin:qiroahGet', ({ id }) => ({ text: db.getQiroahText(id) }));
+  admin('admin:qiroahReadingGet', ({ id }) => ({ reading: db.getQiroahReading(id, true) }));
+  admin('admin:qiroahReadingSave', args => ({ reading: db.saveQiroahReading(args) }));
   admin('admin:qiroahSave', args => ({ text: db.saveQiroahText(args) }));
   admin('admin:qiroahDelete', ({ id }) => ({ deleted: db.deleteQiroahText(id) }));
   const publicQiroah = (event, fn) => socket.on(event, (args, cb) => {
@@ -427,8 +431,22 @@ io.on("connection", (socket) => {
   // Practice v1 intentionally exposes annotations; scoring happens locally.
   publicQiroah('qiroah:list', () => ({ texts: db.listQiroahTexts() }));
   publicQiroah('qiroah:get', ({ id }) => ({ text: db.getQiroahText(id) }));
+  publicQiroah('qiroah:readingGet', ({ id }) => ({ reading: db.getQiroahReading(id) }));
+
+  const readingEvent=(name,fn)=>socket.on(name,async(args={},cb)=>{
+    if(typeof cb!=='function')return;
+    try{qiroah.object(args);cb({ok:true,...await fn(args)});}catch(error){cb({error:error.message});}
+  });
+  readingEvent('reading:health',async()=>({health:await readingSessions.health()}));
+  readingEvent('reading:start',async({id})=>({session:await readingSessions.start(socket.id,id)}));
+  readingEvent('reading:audio',({id,attempt,seq,samples})=>readingSessions.audio(socket.id,{id,attempt,seq,samples}));
+  readingEvent('reading:analyze',({id,attempt})=>readingSessions.analyze(socket.id,{id,attempt}));
+  readingEvent('reading:reset',({id})=>readingSessions.reset(socket.id,id));
+  readingEvent('reading:resume',({id,resumeToken})=>readingSessions.resume(socket.id,id,resumeToken));
+  readingEvent('reading:cancel',({id,resumeToken})=>readingSessions.cancel(socket.id,id,resumeToken));
 
   socket.on("disconnect", () => {
+    readingSessions.disconnect(socket.id);
     const room = socket.data.roomCode && rooms.get(socket.data.roomCode);
     if (!room) return;
     room.players.delete(socket.id);

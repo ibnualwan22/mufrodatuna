@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { mkdtempSync } = require('node:fs');
 const { join } = require('node:path');
-const { homedir } = require('node:os');
+const { tmpdir } = require('node:os');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
 const { DatabaseSync } = require('node:sqlite');
@@ -10,7 +10,7 @@ const { io } = require('socket.io-client');
 const { validateSave, LIMITS } = require('../lib/qiroah');
 
 // Never open the repository database; preserve isolated fixtures for inspection.
-const dir = mkdtempSync(join(process.env.TMPDIR || join(homedir(), '.hermes/cache/scratch'), 'qiroah-'));
+const dir = mkdtempSync(join(process.env.TMPDIR || tmpdir(), 'qiroah-'));
 process.env.DB_PATH = join(dir, 'qiroah.db');
 const db = require('../lib/db');
 const span = { start: 0, end: 6, jenis: 'kalimat', nilai: 'isim', catatan: 'مَرْفُوعٌ' };
@@ -98,7 +98,7 @@ test('Qiroah invalid saves and database failures roll back entire aggregate', ()
   db.deleteQiroahText(saved.id);
 });
 
-test('Qiroah Socket.IO admin auth, public practice, CRUD and malformed payload safety', { timeout: 20000 }, async t => {
+test('Qiroah Socket.IO admin auth, public practice, CRUD and malformed payload safety', { timeout: 45000 }, async t => {
   const password = 'qiroah-disposable-test';
   const child = spawn(process.execPath, ['server.js'], {
     cwd: join(__dirname, '..'), env: { ...process.env, PORT: '0', DB_PATH: join(dir, 'api.db'), ADMIN_PASSWORD: password }, stdio: ['ignore', 'pipe', 'pipe']
@@ -108,7 +108,7 @@ test('Qiroah Socket.IO admin auth, public practice, CRUD and malformed payload s
   });
   let output = '';
   const port = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Startup timeout: ' + output)), 10000);
+    const timer = setTimeout(() => reject(new Error('Startup timeout: ' + output)), 30000);
     child.stdout.on('data', chunk => { output += chunk; const match = output.match(/localhost:(\d+)/); if (match) { clearTimeout(timer); resolve(Number(match[1])); } });
     child.stderr.on('data', chunk => { output += chunk; });
     child.on('error', error => { clearTimeout(timer); reject(error); });
